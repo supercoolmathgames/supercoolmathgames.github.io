@@ -1,7 +1,6 @@
-<!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
-    <meta charset="UTF-UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Chat Website</title>
     <!-- Load Tailwind CSS -->
@@ -49,7 +48,6 @@
                 <p class="text-gray-300 mb-6">
                     This is a simple example of a basic webpage. Below this content, you'll find our global chat.
                     Feel free to say hello to anyone else who might be visiting the page at the same time.
-                    
                 </p>
                 
                 <div class="bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
@@ -64,12 +62,7 @@
                 <div class="bg-gray-800 rounded-lg shadow-lg p-6">
                     <h3 class="text-xl font-semibold mb-3">Your User ID</h3>
                     <p class="text-gray-400 mb-2">
-                        To keep things simple, you are automatically signed in with an anonymous user ID.
-                        This ID is unique to you and is shown in the chat window. This is how the chat
-                        knows which messages are "yours".
-                    </p>
-                    <p class="text-xs text-gray-500">
-                        In a full application, this would be replaced by a real user account (like "JohnDoe").
+                        You are automatically signed in anonymously. Your unique user ID is displayed in the chat header.
                     </p>
                 </div>
             </div>
@@ -94,10 +87,11 @@
                     <!-- Chat Input -->
                     <div class="p-4 border-t border-gray-700">
                         <form id="chat-form" class="flex space-x-2">
-                            <input id="chat-input" type="text" placeholder="Type your message..."
+                            <input id="chat-input" type="text" placeholder="Loading chat..."
                                 class="bg-gray-700 border border-gray-600 rounded-md flex-grow p-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 autocomplete="off"
-                                required>
+                                required
+                                disabled>
                             <button type="submit"
                                 class="bg-blue-600 hover:bg-blue-700 text-white rounded-md p-2 px-4 transition-colors">
                                 <!-- Send Icon SVG -->
@@ -112,17 +106,27 @@
         </div>
     </main>
 
-    <!-- Firebase App (auto-hosted) -->
+    <!-- Firebase App -->
     <script type="module">
         // Import Firebase modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, onSnapshot, addDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- GLOBAL VARIABLES (Provided by the environment) ---
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        //
+        // 🚨 ATTENTION! 🚨
+        // YOU MUST REPLACE THESE PLACEHOLDER VALUES WITH YOUR ACTUAL FIREBASE CONFIG
+        //
+        const firebaseConfig = {
+            apiKey: "PASTE_YOUR_API_KEY_HERE",
+            authDomain: "PASTE_YOUR_AUTH_DOMAIN_HERE",
+            projectId: "PASTE_YOUR_PROJECT_ID_HERE",
+            storageBucket: "PASTE_YOUR_STORAGE_BUCKET_HERE",
+            messagingSenderId: "PASTE_YOUR_SENDER_ID_HERE",
+            appId: "PASTE_YOUR_APP_ID_HERE"
+        };
+        // --------------------------------------------------------------------
+        
         
         // --- DOM Elements ---
         const userIdElement = document.getElementById('user-id');
@@ -132,13 +136,13 @@
         
         let db, auth;
         let currentUserId = null;
-        let messagesCol; // Will be set after auth
+        let messagesCol;
 
         /**
          * Renders the list of messages to the chat window
          */
         function renderMessages(messages, currentUserId) {
-            messagesContainer.innerHTML = ''; // Clear existing messages
+            messagesContainer.innerHTML = ''; 
             
             if (messages.length === 0) {
                 messagesContainer.innerHTML = '<div class="text-center text-gray-500">No messages yet. Say hello!</div>';
@@ -151,7 +155,6 @@
                 const wrapper = document.createElement('div');
                 const alignClass = isOwnMessage ? 'text-right' : 'text-left';
                 const bubbleClass = isOwnMessage ? 'bg-blue-600' : 'bg-gray-700';
-                // Show "You" for own messages, or the full User ID for others
                 const userDisplay = isOwnMessage ? 'You' : msg.userId;
 
                 wrapper.className = `message-item w-full ${alignClass}`;
@@ -165,7 +168,7 @@
                 const bubble = document.createElement('div');
                 bubble.className = `${bubbleClass} rounded-lg p-3 inline-block max-w-[90%] text-left`;
 
-                // Message text (using textContent for safety)
+                // Message text
                 const p = document.createElement('p');
                 p.className = 'break-words';
                 p.textContent = msg.text;
@@ -184,8 +187,8 @@
          * Sets up the real-time listener for chat messages
          */
         function setupMessageListener(currentUserId) {
-            // Define the collection path for "public" data
-            const messagesColPath = `/artifacts/${appId}/public/data/messages`;
+            // Static collection path for GitHub Pages
+            const messagesColPath = "global-chat";
             messagesCol = collection(db, messagesColPath);
 
             // Listen for new messages
@@ -196,7 +199,6 @@
                 });
 
                 // Sort messages by timestamp in JavaScript
-                // (as per instructions to avoid complex indexes)
                 messages.sort((a, b) => a.timestamp - b.timestamp);
 
                 renderMessages(messages, currentUserId);
@@ -212,16 +214,14 @@
 
             if (text && currentUserId && messagesCol) {
                 try {
-                    // Add the new message to Firestore
                     await addDoc(messagesCol, {
                         text: text,
                         userId: currentUserId,
-                        timestamp: Date.now() // Use client-side timestamp for sorting
+                        timestamp: Date.now()
                     });
-                    chatInput.value = ''; // Clear input
+                    chatInput.value = ''; 
                 } catch (error) {
                     console.error("Error sending message: ", error);
-                    // You could show a UI error here
                 }
             }
         }
@@ -230,8 +230,8 @@
          * Main function to initialize the app
          */
         async function main() {
-            if (!firebaseConfig.apiKey) {
-                messagesContainer.innerHTML = '<div class="text-center text-red-500">Firebase is not configured. Chat cannot be loaded.</div>';
+            if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("PASTE_YOUR_API_KEY")) {
+                messagesContainer.innerHTML = '<div class="text-center text-red-500 p-4"><b>Error: Firebase is not configured.</b><br><br>Please replace the placeholder values in the <code>firebaseConfig</code> object.</div>';
                 userIdElement.textContent = "Error";
                 return;
             }
@@ -242,27 +242,21 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                // Enable debug logging for Firestore
                 setLogLevel('Debug');
 
                 // --- Authentication ---
-                // Listen for auth state changes
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        // User is signed in
                         currentUserId = user.uid;
                         userIdElement.textContent = currentUserId;
                         
-                        // Now that we are authenticated, load the chat
                         setupMessageListener(currentUserId);
                         
-                        // Enable the chat form
                         chatForm.addEventListener('submit', handleSendMessage);
                         chatInput.disabled = false;
                         chatInput.placeholder = "Type your message...";
                         
                     } else {
-                        // User is signed out
                         currentUserId = null;
                         userIdElement.textContent = "Not signed in";
                         chatInput.disabled = true;
@@ -271,16 +265,11 @@
                 });
 
                 // --- Sign In ---
-                // Try to sign in with the provided token, or fall back to anonymous
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                await signInAnonymously(auth);
 
             } catch (error) {
                 console.error("Firebase Initialization Error:", error);
-                messagesContainer.innerHTML = `<div class="text-center text-red-500">Error: ${error.message}</div>`;
+                messagesContainer.innerHTML = `<div class="text-center text-red-500 p-4"><b>Error:</b> ${error.message}<br><br>Check your console and make sure your Firestore Security Rules are correct.</div>`;
                 userIdElement.textContent = "Error";
             }
         }
